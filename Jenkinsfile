@@ -11,7 +11,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/Success-C-Opara/pymanage.git' // Replace with your GitHub repo
+                git branch: 'main', url: 'https://github.com/Success-C-Opara/pymanage.git' // Replace with your GitHub repo
             }
         }
 
