@@ -5,7 +5,7 @@ pipeline {
         AWS_SSH_KEY = credentials('my-aws-ssh-key') // Jenkins credential ID for your SSH key
         EC2_USER = 'ec2-user' // Change to your EC2 instance user (e.g., 'ubuntu' for Ubuntu)
         EC2_IP = '35.174.106.155' // Replace with your EC2 instance's public IP
-        DOCKER_IMAGE = 'djangopet' // Name for your Docker image
+        DOCKER_IMAGE = 'djangopet:latest' // Name for your Docker image
     }
 
     stages {
