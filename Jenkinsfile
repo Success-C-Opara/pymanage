@@ -26,7 +26,9 @@ pipeline {
         stage('Save Docker Image') {
             steps {
                 script {
+                    // Save the Docker image to a tar file
                     sh 'docker save -o djangopet.tar $DOCKER_IMAGE:latest'
+                    // Copy the tar file to the EC2 instance
                     sh 'scp -o StrictHostKeyChecking=no -i $AWS_SSH_KEY djangopet.tar $EC2_USER@$EC2_DNS:/tmp/'
                 }
             }
