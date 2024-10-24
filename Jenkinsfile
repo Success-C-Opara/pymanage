@@ -28,8 +28,17 @@ pipeline {
                 script {
                     // Save the Docker image to a tar file
                     sh 'docker save -o djangopet.tar $DOCKER_IMAGE:latest'
-                    // Copy the tar file to the EC2 instance
-                    sh 'scp -o StrictHostKeyChecking=no -i $AWS_SSH_KEY djangopet.tar $EC2_USER@$EC2_DNS:/tmp/'
+                }
+            }
+        }
+
+        stage('Transfer Docker Image to EC2') {
+            steps {
+                script {
+                    // Use ssh-agent to transfer the Docker image
+                    sshagent(['my-aws-ssh-key']) {
+                        sh 'scp -o StrictHostKeyChecking=no djangopet.tar $EC2_USER@$EC2_DNS:/tmp/'
+                    }
                 }
             }
         }
@@ -37,16 +46,18 @@ pipeline {
         stage('Deploy to Target EC2') {
             steps {
                 script {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no -i $AWS_SSH_KEY $EC2_USER@$EC2_DNS "
-                        set -e;
-                        docker load -i /tmp/djangopet.tar &&
-                        docker stop djangopet || true &&
-                        docker rm djangopet || true &&
-                        docker run -d --name djangopet -p 8000:8000 $DOCKER_IMAGE:latest &&
-                        rm /tmp/djangopet.tar
-                        "
-                    '''
+                    sshagent(['my-aws-ssh-key']) {
+                        sh '''
+                            ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_DNS "
+                            set -e;
+                            docker load -i /tmp/djangopet.tar &&
+                            docker stop djangopet || true &&
+                            docker rm djangopet || true &&
+                            docker run -d --name djangopet -p 8000:8000 $DOCKER_IMAGE:latest &&
+                            rm /tmp/djangopet.tar
+                            "
+                        '''
+                    }
                 }
             }
         }
