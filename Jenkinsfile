@@ -18,7 +18,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t $DOCKER_IMAGE:latest .'
+                    sh "docker build -t ${DOCKER_IMAGE}:latest ."
                 }
             }
         }
@@ -27,7 +27,7 @@ pipeline {
             steps {
                 script {
                     // Save the Docker image to a tar file
-                    sh 'docker save -o djangopet.tar $DOCKER_IMAGE:latest'
+                    sh "docker save -o djangopet.tar ${DOCKER_IMAGE}:latest"
                 }
             }
         }
@@ -37,7 +37,10 @@ pipeline {
                 script {
                     // Use ssh-agent to transfer the Docker image
                     sshagent(['my-aws-ssh-key']) {
-                        sh 'scp -o StrictHostKeyChecking=no djangopet.tar $EC2_USER@$EC2_DNS:/tmp/'
+                        sh '''
+                            set -x # Enable debugging
+                            scp -o StrictHostKeyChecking=no djangopet.tar $EC2_USER@$EC2_DNS:/tmp/
+                        '''
                     }
                 }
             }
@@ -48,14 +51,14 @@ pipeline {
                 script {
                     sshagent(['my-aws-ssh-key']) {
                         sh '''
-                            ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_DNS "
-                            set -e;
-                            docker load -i /tmp/djangopet.tar &&
-                            docker stop djangopet || true &&
-                            docker rm djangopet || true &&
-                            docker run -d --name djangopet -p 8000:8000 $DOCKER_IMAGE:latest &&
+                            ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_DNS << 'EOF'
+                            set -e # Exit on error
+                            docker load -i /tmp/djangopet.tar
+                            docker stop djangopet || true
+                            docker rm djangopet || true
+                            docker run -d --name djangopet -p 8000:8000 ${DOCKER_IMAGE}:latest
                             rm /tmp/djangopet.tar
-                            "
+                            EOF
                         '''
                     }
                 }
