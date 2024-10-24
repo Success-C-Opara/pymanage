@@ -37,6 +37,9 @@ pipeline {
                     sshagent(['my-aws-ssh-key']) {
                         sh '''
                             set -x
+                            echo "Transferring Docker image to EC2 instance..."
+                            echo "User: $EC2_USER"
+                            echo "DNS: $EC2_DNS"
                             scp -o StrictHostKeyChecking=no ${WORKSPACE}/djangopet.tar $EC2_USER@$EC2_DNS:/tmp/
                         '''
                     }
@@ -51,10 +54,14 @@ pipeline {
                         sh '''
                             ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_DNS << 'EOF'
                             set -e
+                            echo "Loading Docker image..."
                             docker load -i /tmp/djangopet.tar
+                            echo "Stopping existing container if it exists..."
                             docker stop djangopet || true
                             docker rm djangopet || true
+                            echo "Running new container..."
                             docker run -d --name djangopet -p 8000:8000 ${DOCKER_IMAGE}:latest
+                            echo "Cleaning up..."
                             rm /tmp/djangopet.tar
                             EOF
                         '''
